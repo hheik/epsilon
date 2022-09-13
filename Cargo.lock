@@ -1319,6 +1319,8 @@ name = "epsilon"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "serde",
+ "shalrath",
 ]
 
 [[package]]
@@ -2598,6 +2600,16 @@ checksum = "e55a28e3aaef9d5ce0506d0a14dbba8054ddc7e499ef522dd8b26859ec9d4a44"
 dependencies = [
  "itoa",
  "ryu",
+ "serde",
+]
+
+[[package]]
+name = "shalrath"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6edb70667eff79c82ca7d3ede2e59ef7427acc33c2e036010fa8afcd23ab990"
+dependencies = [
+ "nom",
  "serde",
 ]
 

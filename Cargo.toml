@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.8.1", features = ["dynamic"] }
+serde = "1.0.144"
+shalrath = "0.2.5"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
