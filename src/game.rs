@@ -1,28 +1,35 @@
-use bevy::{input::mouse::MouseMotion, prelude::*, render::mesh::VertexAttributeValues, core::CorePlugin};
-
-use crate::{
-    q_map::{QMap, QMapAsset, QMapPlugin},
-    util::math::*,
+use bevy::{
+    core::CorePlugin, input::mouse::MouseMotion, prelude::*, render::mesh::VertexAttributeValues,
 };
+
+use crate::{qmap::QMapPlugin, util::math::*};
 
 pub fn init() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(QMapPlugin)
         .add_startup_system(map_setup)
-        // .add_startup_system(setup)
-        // .add_system(camera_orbit)
+        .add_startup_system(setup)
+        .add_system(camera_orbit)
         .run();
 }
 
-fn map_setup(
-    asset_server: Res<AssetServer>
-) {
-    let q_map: Handle<QMapAsset> = asset_server.load("levels/station.map");
-    // match q_map.get_field::<QMap>("q_map") {
-    //     Some(some) => println!("something?"),
-    //     None => println!("no q_map :("),
-    // }
+fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // let q_map: Handle<QMap> = asset_server.load("levels/station.map");
+
+    // // Scene
+    // commands.spawn_bundle(SceneBundle {
+    //     scene: asset_server.load("levels/station.map"),
+    //     transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    //     ..default()
+    // });
+
+    commands.spawn_bundle(SceneBundle {
+        // scene: asset_server.load("levels/station.map"),
+        scene: asset_server.load("levels/simple.map"),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        ..default()
+    });
 }
 
 fn setup(
@@ -54,6 +61,13 @@ fn setup(
     //     transform: Transform::from_xyz(0.0, 0.0, 0.0),
     //     ..default()
     // });
+
+    // Scene
+    commands.spawn_bundle(SceneBundle {
+        scene: asset_server.load("scenes/orientation.gltf#Scene0"),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        ..default()
+    });
 
     // // Box
     // {

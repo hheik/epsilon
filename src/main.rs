@@ -1,5 +1,5 @@
 mod game;
-mod q_map;
+mod qmap;
 mod util;
 
 fn main() {
