@@ -27,6 +27,18 @@ impl AssetLoader for QMapAssetLoader {
                 .expect("Failed to parse map as utf-8")
                 .parse::<Map>()
                 .expect("Failed to parse map");
+            for entity in q_map.0.iter() {
+                println!("entity:");
+                for prop in entity.properties.iter() {
+                    println!("    property {}: {}", prop.key, prop.value);
+                };
+                for brush in entity.brushes.iter() {
+                    println!("    brush");
+                    for plane in brush.0.iter() {
+                        println!("        plane: {}", plane);
+                    }
+                }
+            }
             load_context.set_default_asset(LoadedAsset::new(QMapAsset { q_map }));
             Ok(())
         })

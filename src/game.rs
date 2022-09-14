@@ -1,4 +1,4 @@
-use bevy::{input::mouse::MouseMotion, prelude::*, render::mesh::VertexAttributeValues};
+use bevy::{input::mouse::MouseMotion, prelude::*, render::mesh::VertexAttributeValues, core::CorePlugin};
 
 use crate::{
     q_map::{QMap, QMapAsset, QMapPlugin},
@@ -9,9 +9,20 @@ pub fn init() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(QMapPlugin)
+        .add_startup_system(map_setup)
         // .add_startup_system(setup)
         // .add_system(camera_orbit)
         .run();
+}
+
+fn map_setup(
+    asset_server: Res<AssetServer>
+) {
+    let q_map: Handle<QMapAsset> = asset_server.load("levels/station.map");
+    // match q_map.get_field::<QMap>("q_map") {
+    //     Some(some) => println!("something?"),
+    //     None => println!("no q_map :("),
+    // }
 }
 
 fn setup(
@@ -36,12 +47,6 @@ fn setup(
         },
         brightness: 1.0,
     });
-
-    let q_map: Handle<QMapAsset> = asset_server.load("levels/station.map");
-    // match q_map.get_field::<QMap>("q_map") {
-    //     Some(some) => println!("something?"),
-    //     None => println!("no q_map :("),
-    // }
 
     // // Scene
     // commands.spawn_bundle(SceneBundle {
