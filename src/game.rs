@@ -25,8 +25,8 @@ fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // });
 
     commands.spawn_bundle(SceneBundle {
-        // scene: asset_server.load("levels/station.map"),
-        scene: asset_server.load("levels/simple.map"),
+        scene: asset_server.load("levels/station.map"),
+        // scene: asset_server.load("levels/simple.map"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     });
