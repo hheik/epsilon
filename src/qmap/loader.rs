@@ -23,7 +23,7 @@ impl From<TrianglePlane> for Plane {
         let v1 = point_to_vec(plane.v1);
         let v2 = point_to_vec(plane.v2);
 
-        let normal = (v1 - v0).cross(v2 - v0).normalize();
+        let normal = (v0 - v1).cross(v2 - v1).normalize();
         let projected = v0.project_onto_normalized(normal);
         let distance = projected.length() * normal.dot(projected).signum();
 
@@ -67,22 +67,20 @@ async fn load_qmap<'a, 'b>(
             let vertices = vertices_from_brush(brush);
 
             for vertex in vertices {
-                let mesh = Mesh::from(shape::Cube { size: 1.0 });
+                let mesh = Mesh::from(shape::Cube { size: 0.25 });
                 let mesh = load_context.set_labeled_asset(&"Mesh0", LoadedAsset::new(mesh));
 
                 let material = StandardMaterial { ..default() };
                 let material =
                     load_context.set_labeled_asset("Material0", LoadedAsset::new(material));
 
-                println!("[vertex] {}", vertex.position);
-
                 world.spawn().insert_bundle(PbrBundle {
                     mesh,
                     material,
                     transform: Transform::from_xyz(
-                        vertex.position.x,
-                        vertex.position.z,
-                        -vertex.position.y,
+                        vertex.position.x * MAP_SCALE,
+                        vertex.position.z * MAP_SCALE,
+                        -vertex.position.y * MAP_SCALE,
                     ),
                     ..default()
                 });
@@ -99,6 +97,12 @@ async fn load_qmap<'a, 'b>(
 
 fn vertices_from_brush(brush: &Brush) -> Vec<Vertex> {
     let mut vertices: Vec<Vertex> = vec![];
+    let planes: Vec<_> = brush
+        .0
+        .iter()
+        .clone()
+        .map(|brush_plane| Plane::from(brush_plane.plane))
+        .collect();
     for p1 in brush.0.iter() {
         for p2 in brush.0.iter() {
             for p3 in brush.0.iter() {
@@ -107,8 +111,10 @@ fn vertices_from_brush(brush: &Brush) -> Vec<Vertex> {
                     Plane::from(p2.plane),
                     Plane::from(p3.plane),
                 ) {
-                    let point = point * MAP_SCALE;
-                    if !vertices.iter().any(|v| v.position.abs_diff_eq(point, 0.01)) {
+                    let point = point;
+                    if vertex_in_hull(point, &planes)
+                        && !vertices.iter().any(|v| v.position.abs_diff_eq(point, 0.01))
+                    {
                         vertices.push(Vertex { position: point })
                     }
                 };
@@ -159,9 +165,48 @@ fn plane_intersection(p1: Plane, p2: Plane, p3: Plane) -> Option<Vec3> {
         return None;
     }
 
-    Some(Vec3 {
-        x: d.dot(u) / denom,
-        y: m3.dot(v) / denom,
-        z: -m2.dot(v) / denom,
+    Some(
+        Vec3 {
+            x: d.dot(u),
+            y: m3.dot(v),
+            z: -m2.dot(v),
+        } / denom,
+    )
+}
+
+fn vertex_in_hull(point: Vec3, faces: &Vec<Plane>) -> bool {
+    !faces.iter().any(|face| {
+        let projection = face.normal.dot(point);
+        (projection - face.distance) > 0.01
     })
+}
+
+fn get_vertex_uv(point: Vec3, face: Plane, angle: f32, scale: Vec2) -> Vec2 {
+    let dot_x = face.normal.dot(Vec3::X).abs();
+    let dot_y = face.normal.dot(Vec3::Y).abs();
+    let dot_z = face.normal.dot(Vec3::Z).abs();
+
+    let mut uv = if dot_x >= dot_y && dot_x >= dot_z {
+        Vec2 {
+            x: point.y,
+            y: -point.z,
+        }
+    } else if dot_y >= dot_x && dot_y >= dot_z {
+        Vec2 {
+            x: point.x,
+            y: -point.z,
+        }
+    } else {
+        Vec2 {
+            x: point.x,
+            y: -point.y,
+        }
+    };
+
+    uv = Vec2 {
+        x: uv.x * angle.cos() - uv.y * angle.sin(),
+        y: uv.x * angle.sin() - uv.y * angle.cos(),
+    };
+
+    uv
 }

@@ -1,0 +1,16 @@
+// Game: Generic
+// Format: Standard
+// entity 0
+{
+"classname" "worldspawn"
+"_tb_textures" "textures/station"
+// brush 0
+{
+( -32 0 0 ) ( -64 -64 0 ) ( -64 -64 -32 ) station/ceiling_1 0 0 0 1 1
+( -64 -64 0 ) ( 64 -64 0 ) ( 64 -64 -32 ) station/ceiling_1 0 0 0 1 1
+( -64 -64 -32 ) ( 64 -64 -32 ) ( 32 0 -32 ) station/ceiling_1 0 0 0 1 1
+( 32 0 0 ) ( 64 -64 0 ) ( -64 -64 0 ) station/ceiling_1 0 0 0 1 1
+( 32 0 -32 ) ( 32 0 0 ) ( -32 0 0 ) station/ceiling_1 0 0 0 1 1
+( 64 -64 -32 ) ( 64 -64 0 ) ( 32 0 0 ) station/ceiling_1 0 0 0 1 1
+}
+}
