@@ -3,15 +3,19 @@ use bevy::{
     prelude::*,
     utils::BoxedFuture,
 };
-use shalrath::repr::{Brush, Map, Point, TrianglePlane};
+use shalrath::repr::{Brush, Map, Point, TextureOffset, TrianglePlane};
 
 const INVERSE_SCALE_FACTOR: f32 = 16.0;
 const MAP_SCALE: f32 = 1.0 / INVERSE_SCALE_FACTOR;
 
+#[derive(Clone, Copy)]
 struct Vertex {
     position: Vec3,
+    normal: Vec3,
+    uv: Vec2,
 }
 
+#[derive(Clone, Copy)]
 struct Plane {
     normal: Vec3,
     distance: f32,
@@ -29,6 +33,12 @@ impl From<TrianglePlane> for Plane {
 
         Plane { normal, distance }
     }
+}
+
+struct Face {
+    plane: Plane,
+    texture: String,
+    vertices: Vec<Vertex>,
 }
 
 #[derive(Default)]
@@ -64,9 +74,11 @@ async fn load_qmap<'a, 'b>(
             println!("[property] {}: {}", prop.key, prop.value);
         }
         for brush in entity.brushes.iter() {
-            let vertices = vertices_from_brush(brush);
+            // let vertices = faces_from_brush(brush);
+            let faces = faces_from_brush(brush);
 
-            for vertex in vertices {
+            // for vertex in vertices {
+            for face in faces {
                 let mesh = Mesh::from(shape::Cube { size: 0.25 });
                 let mesh = load_context.set_labeled_asset(&"Mesh0", LoadedAsset::new(mesh));
 
@@ -78,9 +90,9 @@ async fn load_qmap<'a, 'b>(
                     mesh,
                     material,
                     transform: Transform::from_xyz(
-                        vertex.position.x * MAP_SCALE,
-                        vertex.position.z * MAP_SCALE,
-                        -vertex.position.y * MAP_SCALE,
+                        face.vertices[0].position.x * MAP_SCALE,
+                        face.vertices[0].position.z * MAP_SCALE,
+                        -face.vertices[0].position.y * MAP_SCALE,
                     ),
                     ..default()
                 });
@@ -95,8 +107,8 @@ async fn load_qmap<'a, 'b>(
     Ok(())
 }
 
-fn vertices_from_brush(brush: &Brush) -> Vec<Vertex> {
-    let mut vertices: Vec<Vertex> = vec![];
+fn faces_from_brush(brush: &Brush) -> Vec<Face> {
+    let mut faces: Vec<Face> = vec![];
     let planes: Vec<_> = brush
         .0
         .iter()
@@ -104,24 +116,48 @@ fn vertices_from_brush(brush: &Brush) -> Vec<Vertex> {
         .map(|brush_plane| Plane::from(brush_plane.plane))
         .collect();
     for p1 in brush.0.iter() {
+        let mut vertices: Vec<Vertex> = vec![];
+        let plane = Plane::from(p1.plane);
         for p2 in brush.0.iter() {
             for p3 in brush.0.iter() {
-                if let Some(point) = plane_intersection(
-                    Plane::from(p1.plane),
-                    Plane::from(p2.plane),
-                    Plane::from(p3.plane),
-                ) {
-                    let point = point;
-                    if vertex_in_hull(point, &planes)
-                        && !vertices.iter().any(|v| v.position.abs_diff_eq(point, 0.01))
+                if let Some(position) =
+                    plane_intersection(plane, Plane::from(p2.plane), Plane::from(p3.plane))
+                {
+                    if vertex_in_hull(position, &planes)
+                        && !vertices
+                            .iter()
+                            .any(|v| v.position.abs_diff_eq(position, 0.01))
                     {
-                        vertices.push(Vertex { position: point })
+                        let uv = get_vertex_uv(
+                            position,
+                            plane,
+                            match p1.texture_offset {
+                                TextureOffset::Standard { u, v } => Vec2 { x: u, y: v },
+                                TextureOffset::Valve { u: _u, v: _v } => Vec2::ZERO,
+                            },
+                            p1.angle,
+                            Vec2 {
+                                x: p1.scale_x,
+                                y: p1.scale_y,
+                            },
+                        );
+                        vertices.push(Vertex {
+                            position,
+                            normal: plane.normal,
+                            uv,
+                        })
                     }
                 };
             }
         }
+        order_vertices_clockwise(&plane.normal, &mut vertices);
+        faces.push(Face {
+            plane,
+            vertices,
+            texture: p1.texture.clone(),
+        })
     }
-    vertices
+    faces
 }
 
 fn point_to_vec(point: Point) -> Vec3 {
@@ -181,7 +217,7 @@ fn vertex_in_hull(point: Vec3, faces: &Vec<Plane>) -> bool {
     })
 }
 
-fn get_vertex_uv(point: Vec3, face: Plane, angle: f32, scale: Vec2) -> Vec2 {
+fn get_vertex_uv(point: Vec3, face: Plane, offset: Vec2, angle: f32, scale: Vec2) -> Vec2 {
     let dot_x = face.normal.dot(Vec3::X).abs();
     let dot_y = face.normal.dot(Vec3::Y).abs();
     let dot_z = face.normal.dot(Vec3::Z).abs();
@@ -208,5 +244,43 @@ fn get_vertex_uv(point: Vec3, face: Plane, angle: f32, scale: Vec2) -> Vec2 {
         y: uv.x * angle.sin() - uv.y * angle.cos(),
     };
 
+    // TODO: calculate actual texture size
+    let texture_size = Vec2 { x: 64.0, y: 64.0 };
+    uv /= texture_size;
+    uv /= scale;
+    uv += offset / texture_size;
+
     uv
+}
+
+fn order_vertices_clockwise(normal: &Vec3, vertices: &mut Vec<Vertex>) {
+    let mut min: Option<Vec3> = None;
+    let mut max: Option<Vec3> = None;
+    for vertex in vertices.iter() {
+        min = match min {
+            Some(min) => Some(min.min(vertex.position)),
+            None => Some(vertex.position),
+        };
+        max = match max {
+            Some(max) => Some(max.max(vertex.position)),
+            None => Some(vertex.position),
+        };
+    }
+
+    let center = match (min, max) {
+        (Some(min), Some(max)) => (min + max) / 2.0,
+        (_, _) => return,
+    };
+
+    let axis = (vertices.first().unwrap().position - center).normalize();
+
+    // TODO: Add proper angle calculation
+    println!("vertices normal: {} - center: {}", normal, center);
+    for vertex in vertices.iter() {
+        let angle = (vertex.position - center).normalize();
+        let angle = axis.cross(angle);
+        let angle = normal.dot(angle);
+        println!("    position: {}", vertex.position.round());
+        println!("    angle: {}", angle);
+    }
 }
