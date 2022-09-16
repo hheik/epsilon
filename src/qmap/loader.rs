@@ -1,45 +1,13 @@
+use std::f32::consts::PI;
+
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
     utils::BoxedFuture,
 };
-use shalrath::repr::{Brush, Map, Point, TextureOffset, TrianglePlane};
+use shalrath::repr::{Brush, Map, TextureOffset};
 
-const INVERSE_SCALE_FACTOR: f32 = 16.0;
-const MAP_SCALE: f32 = 1.0 / INVERSE_SCALE_FACTOR;
-
-#[derive(Clone, Copy)]
-struct Vertex {
-    position: Vec3,
-    normal: Vec3,
-    uv: Vec2,
-}
-
-#[derive(Clone, Copy)]
-struct Plane {
-    normal: Vec3,
-    distance: f32,
-}
-
-impl From<TrianglePlane> for Plane {
-    fn from(plane: TrianglePlane) -> Self {
-        let v0 = point_to_vec(plane.v0);
-        let v1 = point_to_vec(plane.v1);
-        let v2 = point_to_vec(plane.v2);
-
-        let normal = (v0 - v1).cross(v2 - v1).normalize();
-        let projected = v0.project_onto_normalized(normal);
-        let distance = projected.length() * normal.dot(projected).signum();
-
-        Plane { normal, distance }
-    }
-}
-
-struct Face {
-    plane: Plane,
-    texture: String,
-    vertices: Vec<Vertex>,
-}
+use super::{types::*, entity::*};
 
 #[derive(Default)]
 pub struct QMapLoader;
@@ -74,29 +42,8 @@ async fn load_qmap<'a, 'b>(
             println!("[property] {}: {}", prop.key, prop.value);
         }
         for brush in entity.brushes.iter() {
-            // let vertices = faces_from_brush(brush);
-            let faces = faces_from_brush(brush);
-
-            // for vertex in vertices {
-            for face in faces {
-                let mesh = Mesh::from(shape::Cube { size: 0.25 });
-                let mesh = load_context.set_labeled_asset(&"Mesh0", LoadedAsset::new(mesh));
-
-                let material = StandardMaterial { ..default() };
-                let material =
-                    load_context.set_labeled_asset("Material0", LoadedAsset::new(material));
-
-                world.spawn().insert_bundle(PbrBundle {
-                    mesh,
-                    material,
-                    transform: Transform::from_xyz(
-                        face.vertices[0].position.x * MAP_SCALE,
-                        face.vertices[0].position.z * MAP_SCALE,
-                        -face.vertices[0].position.y * MAP_SCALE,
-                    ),
-                    ..default()
-                });
-            }
+            let faces = faces_from_brush(brush).iter().map(convert_face_coords).collect();
+            build_brush_entity(&mut world, load_context, faces);
         }
     }
 
@@ -150,22 +97,37 @@ fn faces_from_brush(brush: &Brush) -> Vec<Face> {
                 };
             }
         }
-        order_vertices_clockwise(&plane.normal, &mut vertices);
+        order_vertices_counter_clockwise(plane.normal, &mut vertices);
         faces.push(Face {
             plane,
             vertices,
             texture: p1.texture.clone(),
-        })
+        });
     }
     faces
 }
 
-fn point_to_vec(point: Point) -> Vec3 {
-    Vec3 {
-        x: point.x,
-        y: point.y,
-        z: point.z,
+fn convert_face_coords(face: &Face) -> Face {
+    Face {
+        plane: Plane {
+            distance: face.plane.distance,
+            normal: convert_coords(face.plane.normal).normalize(),
+        },
+        texture: face.texture.clone(),
+        vertices: face.vertices.iter().map(|vert| Vertex { 
+            position: convert_coords(vert.position),
+            normal: convert_coords(vert.normal).normalize(),
+            uv: vert.uv,
+        }).collect(),
     }
+}
+
+fn convert_coords(map_point: Vec3) -> Vec3 {
+    Vec3 {
+        x: map_point.x,
+        y: map_point.z,
+        z: -map_point.y,
+    } * MAP_SCALE
 }
 
 /// This mystery algorithm was provided by
@@ -253,7 +215,7 @@ fn get_vertex_uv(point: Vec3, face: Plane, offset: Vec2, angle: f32, scale: Vec2
     uv
 }
 
-fn order_vertices_clockwise(normal: &Vec3, vertices: &mut Vec<Vertex>) {
+fn order_vertices_counter_clockwise(normal: Vec3, vertices: &mut Vec<Vertex>) {
     let mut min: Option<Vec3> = None;
     let mut max: Option<Vec3> = None;
     for vertex in vertices.iter() {
@@ -274,13 +236,90 @@ fn order_vertices_clockwise(normal: &Vec3, vertices: &mut Vec<Vertex>) {
 
     let axis = (vertices.first().unwrap().position - center).normalize();
 
-    // TODO: Add proper angle calculation
-    println!("vertices normal: {} - center: {}", normal, center);
-    for vertex in vertices.iter() {
-        let angle = (vertex.position - center).normalize();
-        let angle = axis.cross(angle);
-        let angle = normal.dot(angle);
-        println!("    position: {}", vertex.position.round());
-        println!("    angle: {}", angle);
+    vertices.sort_unstable_by(|a, b| {
+        let a = angle_around_axis(normal, axis, a.position - center);
+        let b = angle_around_axis(normal, axis, b.position - center);
+        a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
+    });
+}
+
+fn normalize_if_not(vector: Vec3) -> Vec3 {
+    match vector.is_normalized() {
+        true => vector,
+        false => vector.normalize(),
+    }
+}
+
+fn angle_around_axis(axis: Vec3, from: Vec3, to: Vec3) -> f32 {
+    angle_around_axis_normalized(
+        normalize_if_not(axis),
+        normalize_if_not(from),
+        normalize_if_not(to)
+    )
+}
+
+/// Get the clockwise angle between 2 vectors in [0, 360[ range
+fn angle_around_axis_normalized(normal: Vec3, from: Vec3, to: Vec3) -> f32 {
+    let angle = from.angle_between(to);
+    if normal.dot(from.cross(to)) >= 0.0 {
+        angle
+    } else {
+        (PI * 2.0 - angle) % (PI * 2.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::prelude::*;
+
+    use crate::qmap::loader::angle_around_axis;
+
+    #[test]
+    fn greater_than_180_degrees() {
+        assert_eq!(Vec3::Z, Vec3::X.cross(Vec3::Y));
+
+        let a = Vec3::X;
+        let b = Vec3::Y;
+        let normal = Vec3::Z;
+
+        assert_eq!(0.0, angle_around_axis(normal, a, a).to_degrees().round());
+        assert_eq!(45.0, angle_around_axis(normal, a, a+b).to_degrees().round());
+        assert_eq!(90.0, angle_around_axis(normal, a, b).to_degrees().round());
+        assert_eq!(135.0, angle_around_axis(normal, a, b-a).to_degrees().round());
+        assert_eq!(180.0, angle_around_axis(normal, a, -a).to_degrees().round());
+        assert_eq!(225.0, angle_around_axis(normal, a, -a-b).to_degrees().round());
+        assert_eq!(270.0, angle_around_axis(normal, a, -b).to_degrees().round());
+        assert_eq!(315.0, angle_around_axis(normal, a, a-b).to_degrees().round());
+    }
+
+    #[test]
+    fn inverted_normal() {
+        assert_eq!(Vec3::Z, Vec3::X.cross(Vec3::Y));
+
+        let a = Vec3::X;
+        let b = Vec3::Y;
+        let normal = Vec3::NEG_Z;
+
+        assert_eq!(0.0, angle_around_axis(normal, a, a).to_degrees().round());
+        assert_eq!(360.0 - 45.0, angle_around_axis(normal, a, a+b).to_degrees().round());
+        assert_eq!(360.0 - 90.0, angle_around_axis(normal, a, b).to_degrees().round());
+        assert_eq!(360.0 - 135.0, angle_around_axis(normal, a, b-a).to_degrees().round());
+        assert_eq!(360.0 - 180.0, angle_around_axis(normal, a, -a).to_degrees().round());
+        assert_eq!(360.0 - 225.0, angle_around_axis(normal, a, -a-b).to_degrees().round());
+        assert_eq!(360.0 - 270.0, angle_around_axis(normal, a, -b).to_degrees().round());
+        assert_eq!(360.0 - 315.0, angle_around_axis(normal, a, a-b).to_degrees().round());
+    }
+
+    #[test]
+    fn different_comparison() {
+        assert_eq!(Vec3::Z, Vec3::X.cross(Vec3::Y));
+
+        let a = Vec3::NEG_X + Vec3::NEG_Y;
+        let b = Vec3::Y;
+        let normal = Vec3::Z;
+
+        assert_eq!(0.0, angle_around_axis(normal, a, a).to_degrees().round());
+        assert_eq!(225.0, angle_around_axis(normal, a, b).to_degrees().round());
+        assert_eq!(45.0, angle_around_axis(normal, a, -b).to_degrees().round());
     }
 }
