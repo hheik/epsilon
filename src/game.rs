@@ -33,15 +33,10 @@ fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 }
 
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Camera
     commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 5.0, 6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(0.0, 20.0, 24.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
 
@@ -56,44 +51,12 @@ fn setup(
         brightness: 1.0,
     });
 
-    // // Scene
-    // commands.spawn_bundle(SceneBundle {
-    //     scene: asset_server.load("scenes/test_scene.gltf#Scene0"),
-    //     transform: Transform::from_xyz(0.0, 0.0, 0.0),
-    //     ..default()
-    // });
-
     // Scene
     commands.spawn_bundle(SceneBundle {
-        scene: asset_server.load("scenes/orientation.gltf#Scene0"),
+        scene: asset_server.load("scenes/axis.gltf#Scene0"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     });
-
-    // // Box
-    // {
-    //     let mut mesh = Mesh::from(shape::Cube { size: 1.0 });
-    //     if let Some(VertexAttributeValues::Float32x3(positions)) =
-    //         mesh.attribute(Mesh::ATTRIBUTE_POSITION)
-    //     {
-    //         let colors: Vec<[f32; 4]> = positions
-    //             .iter()
-    //             .map(|[x, y, z]| {
-    //                 let r = inverse_lerp(-0.5, 0.5, *x);
-    //                 let g = inverse_lerp(-0.5, 0.5, *y);
-    //                 let b = inverse_lerp(-0.5, 0.5, *z);
-    //                 [r, g, b, 1.0]
-    //             })
-    //             .collect();
-    //         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-    //     }
-    //     commands.spawn_bundle(PbrBundle {
-    //         mesh: meshes.add(mesh),
-    //         material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
-    //         transform: Transform::from_xyz(-1.5, 0.5, 0.0),
-    //         ..default()
-    //     });
-    // }
 }
 
 fn camera_orbit(

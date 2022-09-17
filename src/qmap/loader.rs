@@ -7,7 +7,7 @@ use bevy::{
 };
 use shalrath::repr::{Brush, Map, TextureOffset};
 
-use super::{types::*, entity::*};
+use super::{entity::*, types::*};
 
 #[derive(Default)]
 pub struct QMapLoader;
@@ -37,13 +37,17 @@ async fn load_qmap<'a, 'b>(
 
     let mut world = World::default();
 
+    let mut mesh_counter = 0;
     for entity in qmap.0.iter() {
         for prop in entity.properties.iter() {
             println!("[property] {}: {}", prop.key, prop.value);
         }
         for brush in entity.brushes.iter() {
-            let faces = faces_from_brush(brush).iter().map(convert_face_coords).collect();
-            build_brush_entity(&mut world, load_context, faces);
+            let faces = faces_from_brush(brush)
+                .iter()
+                .map(convert_face_coords)
+                .collect();
+            build_brush_entity(&mut world, load_context, &mut mesh_counter, faces);
         }
     }
 
@@ -114,11 +118,15 @@ fn convert_face_coords(face: &Face) -> Face {
             normal: convert_coords(face.plane.normal).normalize(),
         },
         texture: face.texture.clone(),
-        vertices: face.vertices.iter().map(|vert| Vertex { 
-            position: convert_coords(vert.position),
-            normal: convert_coords(vert.normal).normalize(),
-            uv: vert.uv,
-        }).collect(),
+        vertices: face
+            .vertices
+            .iter()
+            .map(|vert| Vertex {
+                position: convert_coords(vert.position),
+                normal: convert_coords(vert.normal).normalize(),
+                uv: vert.uv,
+            })
+            .collect(),
     }
 }
 
@@ -254,7 +262,7 @@ fn angle_around_axis(axis: Vec3, from: Vec3, to: Vec3) -> f32 {
     angle_around_axis_normalized(
         normalize_if_not(axis),
         normalize_if_not(from),
-        normalize_if_not(to)
+        normalize_if_not(to),
     )
 }
 
@@ -283,13 +291,25 @@ mod tests {
         let normal = Vec3::Z;
 
         assert_eq!(0.0, angle_around_axis(normal, a, a).to_degrees().round());
-        assert_eq!(45.0, angle_around_axis(normal, a, a+b).to_degrees().round());
+        assert_eq!(
+            45.0,
+            angle_around_axis(normal, a, a + b).to_degrees().round()
+        );
         assert_eq!(90.0, angle_around_axis(normal, a, b).to_degrees().round());
-        assert_eq!(135.0, angle_around_axis(normal, a, b-a).to_degrees().round());
+        assert_eq!(
+            135.0,
+            angle_around_axis(normal, a, b - a).to_degrees().round()
+        );
         assert_eq!(180.0, angle_around_axis(normal, a, -a).to_degrees().round());
-        assert_eq!(225.0, angle_around_axis(normal, a, -a-b).to_degrees().round());
+        assert_eq!(
+            225.0,
+            angle_around_axis(normal, a, -a - b).to_degrees().round()
+        );
         assert_eq!(270.0, angle_around_axis(normal, a, -b).to_degrees().round());
-        assert_eq!(315.0, angle_around_axis(normal, a, a-b).to_degrees().round());
+        assert_eq!(
+            315.0,
+            angle_around_axis(normal, a, a - b).to_degrees().round()
+        );
     }
 
     #[test]
@@ -301,13 +321,34 @@ mod tests {
         let normal = Vec3::NEG_Z;
 
         assert_eq!(0.0, angle_around_axis(normal, a, a).to_degrees().round());
-        assert_eq!(360.0 - 45.0, angle_around_axis(normal, a, a+b).to_degrees().round());
-        assert_eq!(360.0 - 90.0, angle_around_axis(normal, a, b).to_degrees().round());
-        assert_eq!(360.0 - 135.0, angle_around_axis(normal, a, b-a).to_degrees().round());
-        assert_eq!(360.0 - 180.0, angle_around_axis(normal, a, -a).to_degrees().round());
-        assert_eq!(360.0 - 225.0, angle_around_axis(normal, a, -a-b).to_degrees().round());
-        assert_eq!(360.0 - 270.0, angle_around_axis(normal, a, -b).to_degrees().round());
-        assert_eq!(360.0 - 315.0, angle_around_axis(normal, a, a-b).to_degrees().round());
+        assert_eq!(
+            360.0 - 45.0,
+            angle_around_axis(normal, a, a + b).to_degrees().round()
+        );
+        assert_eq!(
+            360.0 - 90.0,
+            angle_around_axis(normal, a, b).to_degrees().round()
+        );
+        assert_eq!(
+            360.0 - 135.0,
+            angle_around_axis(normal, a, b - a).to_degrees().round()
+        );
+        assert_eq!(
+            360.0 - 180.0,
+            angle_around_axis(normal, a, -a).to_degrees().round()
+        );
+        assert_eq!(
+            360.0 - 225.0,
+            angle_around_axis(normal, a, -a - b).to_degrees().round()
+        );
+        assert_eq!(
+            360.0 - 270.0,
+            angle_around_axis(normal, a, -b).to_degrees().round()
+        );
+        assert_eq!(
+            360.0 - 315.0,
+            angle_around_axis(normal, a, a - b).to_degrees().round()
+        );
     }
 
     #[test]

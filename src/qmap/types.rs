@@ -19,9 +19,21 @@ pub struct Plane {
 
 impl From<TrianglePlane> for Plane {
     fn from(plane: TrianglePlane) -> Self {
-        let v0 = Vec3{ x: plane.v0.x, y: plane.v0.y, z: plane.v0.z };
-        let v1 = Vec3{ x: plane.v1.x, y: plane.v1.y, z: plane.v1.z };
-        let v2 = Vec3{ x: plane.v2.x, y: plane.v2.y, z: plane.v2.z };
+        let v0 = Vec3 {
+            x: plane.v0.x,
+            y: plane.v0.y,
+            z: plane.v0.z,
+        };
+        let v1 = Vec3 {
+            x: plane.v1.x,
+            y: plane.v1.y,
+            z: plane.v1.z,
+        };
+        let v2 = Vec3 {
+            x: plane.v2.x,
+            y: plane.v2.y,
+            z: plane.v2.z,
+        };
 
         let normal = (v0 - v1).cross(v2 - v1).normalize();
         let projected = v0.project_onto_normalized(normal);
@@ -31,6 +43,7 @@ impl From<TrianglePlane> for Plane {
     }
 }
 
+#[derive(Clone)]
 pub struct Face {
     pub plane: Plane,
     pub texture: String,
@@ -39,13 +52,22 @@ pub struct Face {
 
 impl Face {
     pub fn as_tuples(&self) -> (Vec<[f32; 3]>, Vec<[f32; 2]>, Vec<[f32; 3]>) {
-        let mut tuples: (Vec<[f32; 3]>, Vec<[f32; 2]>, Vec<[f32; 3]>) = (Vec::new(), Vec::new(), Vec::new());
+        let mut tuples: (Vec<[f32; 3]>, Vec<[f32; 2]>, Vec<[f32; 3]>) =
+            (Vec::new(), Vec::new(), Vec::new());
         for vert in self.vertices.iter() {
             tuples.0.push(vec3_to_arr(vert.position));
             tuples.1.push(vec2_to_arr(vert.uv));
             tuples.2.push(vec3_to_arr(vert.normal));
         }
         tuples
+    }
+
+    pub fn offset_to_origin(&self, origin: Vec3) -> Face {
+        let mut face = self.clone();
+        for vert in face.vertices.iter_mut() {
+            vert.position -= origin;
+        }
+        face
     }
 }
 
