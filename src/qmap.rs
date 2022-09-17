@@ -1,8 +1,8 @@
 use self::loader::QMapLoader;
 use bevy::prelude::*;
 
-mod loader;
 mod entity;
+mod loader;
 mod types;
 
 pub struct QMapPlugin;

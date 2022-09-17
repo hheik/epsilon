@@ -4,7 +4,7 @@ use shalrath::repr::TrianglePlane;
 pub const INVERSE_SCALE_FACTOR: f32 = 16.0;
 pub const MAP_SCALE: f32 = 1.0 / INVERSE_SCALE_FACTOR;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vertex {
     pub position: Vec3,
     pub normal: Vec3,

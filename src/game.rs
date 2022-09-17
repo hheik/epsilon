@@ -1,12 +1,11 @@
-use bevy::{
-    core::CorePlugin, input::mouse::MouseMotion, prelude::*, render::mesh::VertexAttributeValues,
-};
+use bevy::{input::mouse::MouseMotion, prelude::*};
 
-use crate::{qmap::QMapPlugin, util::math::*};
+use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
 pub fn init() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(ImporterPlugins)
         .add_plugin(QMapPlugin)
         .add_startup_system(map_setup)
         .add_startup_system(setup)
@@ -15,19 +14,11 @@ pub fn init() {
 }
 
 fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // let q_map: Handle<QMap> = asset_server.load("levels/station.map");
-
-    // // Scene
-    // commands.spawn_bundle(SceneBundle {
-    //     scene: asset_server.load("levels/station.map"),
-    //     transform: Transform::from_xyz(0.0, 0.0, 0.0),
-    //     ..default()
-    // });
-
     commands.spawn_bundle(SceneBundle {
         // scene: asset_server.load("levels/station.map"),
-        // scene: asset_server.load("levels/simple.map"),
-        scene: asset_server.load("levels/in_hull.map"),
+        scene: asset_server.load("levels/simple.map"),
+        // scene: asset_server.load("levels/in_hull.map"),
+        // scene: asset_server.load("levels/cube.map"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     });

@@ -86,7 +86,7 @@ fn faces_from_brush(brush: &Brush) -> Vec<Face> {
                                 TextureOffset::Standard { u, v } => Vec2 { x: u, y: v },
                                 TextureOffset::Valve { u: _u, v: _v } => Vec2::ZERO,
                             },
-                            p1.angle,
+                            p1.angle.to_radians(),
                             Vec2 {
                                 x: p1.scale_x,
                                 y: p1.scale_y,
@@ -96,7 +96,7 @@ fn faces_from_brush(brush: &Brush) -> Vec<Face> {
                             position,
                             normal: plane.normal,
                             uv,
-                        })
+                        });
                     }
                 };
             }
@@ -215,10 +215,12 @@ fn get_vertex_uv(point: Vec3, face: Plane, offset: Vec2, angle: f32, scale: Vec2
     };
 
     // TODO: calculate actual texture size
-    let texture_size = Vec2 { x: 64.0, y: 64.0 };
+    let texture_size = Vec2 { x: 32.0, y: 32.0 };
     uv /= texture_size;
     uv /= scale;
     uv += offset / texture_size;
+
+    uv *= Vec2 { x: 1.0, y: -1.0 };
 
     uv
 }
