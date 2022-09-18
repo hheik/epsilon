@@ -188,30 +188,28 @@ fn vertex_in_hull(point: Vec3, faces: &Vec<Plane>) -> bool {
 }
 
 fn get_vertex_uv(point: Vec3, face: Plane, offset: Vec2, angle: f32, scale: Vec2) -> Vec2 {
-    let dot_x = face.normal.dot(Vec3::X).abs();
-    let dot_y = face.normal.dot(Vec3::Y).abs();
-    let dot_z = face.normal.dot(Vec3::Z).abs();
+    let abs_normal = face.normal.abs();
 
-    let mut uv = if dot_x >= dot_y && dot_x >= dot_z {
-        Vec2 {
-            x: point.y,
-            y: -point.z,
-        }
-    } else if dot_y >= dot_x && dot_y >= dot_z {
+    let mut uv = if abs_normal.z >= abs_normal.x && abs_normal.z >= abs_normal.y {
         Vec2 {
             x: point.x,
+            y: -point.y,
+        }
+    } else if abs_normal.x >= abs_normal.y && abs_normal.x >= abs_normal.z {
+        Vec2 {
+            x: point.y,
             y: -point.z,
         }
     } else {
         Vec2 {
             x: point.x,
-            y: -point.y,
+            y: -point.z,
         }
     };
 
     uv = Vec2 {
         x: uv.x * angle.cos() - uv.y * angle.sin(),
-        y: uv.x * angle.sin() - uv.y * angle.cos(),
+        y: uv.x * angle.sin() + uv.y * angle.cos(),
     };
 
     // TODO: calculate actual texture size
@@ -219,8 +217,6 @@ fn get_vertex_uv(point: Vec3, face: Plane, offset: Vec2, angle: f32, scale: Vec2
     uv /= texture_size;
     uv /= scale;
     uv += offset / texture_size;
-
-    uv *= Vec2 { x: 1.0, y: -1.0 };
 
     uv
 }
