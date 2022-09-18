@@ -1,25 +1,38 @@
-use bevy::{input::mouse::MouseMotion, prelude::*};
+use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
+
+use self::{
+    kinematic::{kinematic_collisions, kinematic_movement},
+    player::*,
+};
+
+mod kinematic;
+mod player;
 
 pub fn init() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(ImporterPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
+        // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(QMapPlugin)
         .add_startup_system(map_setup)
         .add_startup_system(setup)
-        .add_system(camera_orbit)
+        .add_startup_system(player_setup)
+        .add_system(mouse_capture)
+        .add_system(player_system)
+        .add_system(player_camera)
+        .add_system(kinematic_movement)
+        .add_system(kinematic_collisions)
         .run();
 }
 
 fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(SceneBundle {
-        // scene: asset_server.load("levels/station.map"),
-        scene: asset_server.load("levels/simple.map"),
+        scene: asset_server.load("levels/station.map"),
+        // scene: asset_server.load("levels/simple.map"),
         // scene: asset_server.load("levels/in_hull.map"),
         // scene: asset_server.load("levels/cube.map"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
@@ -28,12 +41,6 @@ fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Camera
-    commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 20.0, 24.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
-
     // Ambient light
     commands.insert_resource(AmbientLight {
         color: Color::Hsla {
@@ -53,23 +60,18 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 }
 
-fn camera_orbit(
-    mut mouse_motion_events: EventReader<MouseMotion>,
-    mut query: Query<&mut Transform, With<Camera3d>>,
+fn mouse_capture(
+    mut windows: ResMut<Windows>,
+    mouse: Res<Input<MouseButton>>,
+    key: Res<Input<KeyCode>>,
 ) {
-    let origin = Vec3 {
-        x: 0.0,
-        y: 2.0,
-        z: 0.0,
-    };
-    for event in mouse_motion_events.iter() {
-        for mut transform in query.iter_mut() {
-            transform.rotate_around(origin, Quat::from_rotation_y(event.delta.x * -0.005));
-            let right = transform.right();
-            transform.rotate_around(
-                origin,
-                Quat::from_scaled_axis(right * event.delta.y * -0.005),
-            )
-        }
+    let window = windows.get_primary_mut().unwrap();
+    if mouse.just_pressed(MouseButton::Left) {
+        window.set_cursor_visibility(false);
+        window.set_cursor_lock_mode(true);
+    }
+    if key.just_pressed(KeyCode::Escape) {
+        window.set_cursor_visibility(true);
+        window.set_cursor_lock_mode(false);
     }
 }
