@@ -54,7 +54,6 @@ fn event_handler(
 fn import_flusher(mut images: ResMut<Assets<Image>>, mut image_importer: ResMut<ImageImporter>) {
     let handles: Vec<Handle<Image>> = image_importer.import_queue.keys().cloned().collect();
     for handle in &handles {
-        println!("Importing asset");
         let mut image = match images.get_mut(handle) {
             Some(image) => image,
             None => return,
@@ -64,5 +63,13 @@ fn import_flusher(mut images: ResMut<Assets<Image>>, mut image_importer: ResMut<
             .remove(&handle)
             .expect("No import data for given handle");
         image.sampler_descriptor = data.sampler;
+    }
+
+    for (_, image) in images.iter_mut() {
+        let mut sampler = ImageSampler::nearest_descriptor();
+        sampler.address_mode_u = AddressMode::Repeat;
+        sampler.address_mode_v = AddressMode::Repeat;
+        sampler.address_mode_w = AddressMode::Repeat;
+        image.sampler_descriptor = ImageSampler::Descriptor(sampler);
     }
 }
