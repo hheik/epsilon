@@ -6,7 +6,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
 };
 
-use super::types::*;
+use super::{types::*, Hull};
 
 pub fn build_brush_entity<'a>(
     world: &mut World,
@@ -15,6 +15,10 @@ pub fn build_brush_entity<'a>(
     faces: Vec<Face>,
 ) {
     let origin = faces.first().unwrap().vertices.first().unwrap().position;
+    let mut hull: Vec<Vec3> = vec![];
+
+    let mut children: Vec<Entity> = vec![];
+
     for face in faces.iter().map(|face| face.offset_to_origin(origin)) {
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
 
@@ -40,14 +44,38 @@ pub fn build_brush_entity<'a>(
             load_context.set_labeled_asset(&format!("mesh/{mesh_counter}"), LoadedAsset::new(mesh));
         let material = load_material(load_context, format!("textures/{}", face.texture));
 
-        world.spawn().insert_bundle(PbrBundle {
-            mesh,
-            material,
-            transform: Transform::from_xyz(origin.x, origin.y, origin.z),
-            ..default()
-        });
+        children.push(
+            world
+                .spawn()
+                .insert_bundle(PbrBundle {
+                    mesh,
+                    material,
+                    ..default()
+                })
+                .id(),
+        );
+
+        for vertex in face.vertices.iter() {
+            // Add vertex to hull if it doesn't already exist
+            if !hull
+                .iter()
+                .any(|point| point.abs_diff_eq(vertex.position, 0.01))
+            {
+                hull.push(vertex.position);
+            }
+        }
+
         *mesh_counter += 1;
     }
+
+    world
+        .spawn()
+        .insert_bundle(TransformBundle::from(Transform::from_xyz(
+            origin.x, origin.y, origin.z,
+        )))
+        .insert_bundle(VisibilityBundle::default())
+        .insert(Hull { points: hull })
+        .push_children(&children);
 }
 
 fn load_material<'a>(load_context: &'a mut LoadContext, path: String) -> Handle<StandardMaterial> {

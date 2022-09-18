@@ -1,4 +1,5 @@
 use bevy::{input::mouse::MouseMotion, prelude::*};
+use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
@@ -6,6 +7,8 @@ pub fn init() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(ImporterPlugins)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(QMapPlugin)
         .add_startup_system(map_setup)
         .add_startup_system(setup)
