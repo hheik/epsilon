@@ -43,7 +43,6 @@ pub struct MovementProperties {
 #[derive(Default, Component)]
 pub struct KinematicInput {
     pub movement: Vec3,
-    pub facing: Quat,
 }
 
 pub fn kinematic_movement(
