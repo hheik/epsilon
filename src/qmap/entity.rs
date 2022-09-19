@@ -132,11 +132,10 @@ pub fn build_entity(world: &mut World, class_name: String, prop_map: HashMap<Str
                         .unwrap_or_default(),
                     range: prop_map
                         .get("range")
-                        .unwrap_or(&"8.0".to_string())
+                        .unwrap_or(&"15.0".to_string())
                         .parse::<f32>()
                         .unwrap_or_default(),
                     color: Color::hsl(0.50, 0.15, 0.7),
-                    // color: Color::WHITE,
                     ..default()
                 },
                 transform: Transform::from_xyz(origin.x, origin.y, origin.z),
