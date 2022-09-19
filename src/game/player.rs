@@ -18,7 +18,7 @@ pub struct PlayerBundle {
 
 pub fn player_setup(mut commands: Commands) {
     let mut kinematic = KinematicBundle::default();
-    kinematic.collider = Collider::capsule_y(0.9, 0.3);
+    kinematic.collider = Collider::ball(0.3);
     kinematic.transform = TransformBundle::from(Transform::from_xyz(0.0, 1.0, 0.0));
 
     commands
@@ -27,8 +27,12 @@ pub fn player_setup(mut commands: Commands) {
             kinematic,
             ..default()
         })
+        .insert(MovementProperties {
+            speed: 4.0,
+            acceleration: 4.0,
+            friction: 4.0,
+        })
         .insert(KinematicInput::default())
-        .insert(LockedAxes::ROTATION_LOCKED)
         .with_children(|build| {
             build
                 .spawn()
@@ -39,7 +43,7 @@ pub fn player_setup(mut commands: Commands) {
                             ..default()
                         },
                     ),
-                    transform: Transform::from_xyz(0.0, 0.7, 0.0),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.3),
                     ..default()
                 })
                 .insert(PlayerInput {});
@@ -63,21 +67,16 @@ pub fn player_system(
 
     let movement = Vec3 {
         x: input_to_axis(input.pressed(KeyCode::A), input.pressed(KeyCode::D)),
-        y: 0.0,
+        y: input_to_axis(
+            input.pressed(KeyCode::LShift),
+            input.pressed(KeyCode::Space),
+        ),
         z: input_to_axis(input.pressed(KeyCode::W), input.pressed(KeyCode::S)),
-    } * 5.0;
+    };
 
-    let forward = camera_transform
-        .forward()
-        .reject_from(Vec3::Y)
-        .normalize_or_zero();
-
-    let right = camera_transform
-        .right()
-        .reject_from(Vec3::Y)
-        .normalize_or_zero();
-
-    kinematic_input.movement = forward * -movement.z + right * movement.x;
+    kinematic_input.movement = camera_transform.right() * movement.x
+        + camera_transform.up() * movement.y
+        - camera_transform.forward() * movement.z;
 }
 
 fn input_to_axis(negative: bool, positive: bool) -> f32 {
@@ -92,13 +91,21 @@ fn input_to_axis(negative: bool, positive: bool) -> f32 {
 }
 
 pub fn player_camera(
+    input: Res<Input<KeyCode>>,
+    time: Res<Time>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut query: Query<&mut Transform, (With<Camera3d>, With<PlayerInput>)>,
 ) {
-    for event in mouse_motion_events.iter() {
-        for mut transform in query.iter_mut() {
-            transform.rotate(Quat::from_rotation_y(event.delta.x * -0.005));
-            transform.rotate_local_x(event.delta.y * -0.005)
+    for mut transform in query.iter_mut() {
+        for event in mouse_motion_events.iter() {
+            let rotation = Quat::from_axis_angle(transform.up(), event.delta.x * -0.005);
+            transform.rotate_around(Vec3::ZERO, rotation);
+            let rotation = Quat::from_axis_angle(transform.right(), event.delta.y * -0.005);
+            transform.rotate_around(Vec3::ZERO, rotation);
+            let up = transform.up();
+            transform.look_at(Vec3::ZERO, up);
         }
+        let roll = input_to_axis(input.pressed(KeyCode::E), input.pressed(KeyCode::Q));
+        transform.rotate_local_z(roll * PI * time.delta_seconds());
     }
 }

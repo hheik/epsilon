@@ -9,7 +9,9 @@ use crate::util::math::{inverse_lerp, lerp};
 pub struct KinematicBundle {
     pub rigidbody: RigidBody,
     pub velocity: Velocity,
+    pub gravity_scale: GravityScale,
     pub collider: Collider,
+    pub locked_axes: LockedAxes,
     pub events: ActiveEvents,
     pub collisions: ActiveCollisionTypes,
     #[bundle]
@@ -20,10 +22,12 @@ impl Default for KinematicBundle {
     fn default() -> Self {
         KinematicBundle {
             rigidbody: RigidBody::Dynamic,
+            velocity: Velocity::default(),
+            gravity_scale: GravityScale(0.0),
+            collider: Collider::default(),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
             events: ActiveEvents::COLLISION_EVENTS,
             collisions: ActiveCollisionTypes::all(),
-            velocity: Velocity::default(),
-            collider: Collider::default(),
             transform: TransformBundle::default(),
         }
     }
@@ -39,6 +43,7 @@ pub struct MovementProperties {
 #[derive(Default, Component)]
 pub struct KinematicInput {
     pub movement: Vec3,
+    pub facing: Quat,
 }
 
 pub fn kinematic_movement(
@@ -52,7 +57,6 @@ pub fn kinematic_movement(
     for (mut velocity, input, props) in query.iter_mut() {
         let default = &KinematicInput::default();
         let input = input.unwrap_or(default);
-        let mut current_velocity = velocity.linvel;
 
         let default = &MovementProperties {
             speed: 1.0,
@@ -61,27 +65,15 @@ pub fn kinematic_movement(
         };
         let props = props.unwrap_or(default);
 
-        let gravity_dir = Vec3::NEG_Y;
-        let gravity_magnitude: f32 = 0.0;
-        let gravity = gravity_dir * gravity_magnitude;
+        let current_velocity = velocity.linvel;
+        let target_velocity = input.movement * props.speed;
 
-        // TODO: If has gravity
-        let target_velocity = if true {
-            current_velocity += gravity * time.delta_seconds();
-            input.movement * props.speed + current_velocity.project_onto(gravity_dir)
-        } else {
-            input.movement * props.speed
-        };
-
-        let current_projected = current_velocity.reject_from(gravity_dir);
-        let target_projected = target_velocity.reject_from(gravity_dir);
-
-        let angle_lerp = if current_projected.length_squared() > 0.01 {
+        let angle_lerp = if current_velocity.length_squared() > 0.01 {
             let result = inverse_lerp(
                 0.0,
                 PI,
-                current_projected
-                    .angle_between(target_projected - current_projected)
+                current_velocity
+                    .angle_between(target_velocity - current_velocity)
                     .abs(),
             );
             if result.is_nan() {
