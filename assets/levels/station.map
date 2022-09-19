@@ -4,6 +4,7 @@
 {
 "classname" "worldspawn"
 "_tb_textures" "textures;textures/station"
+"_tb_def" "external:../entity.fgd"
 // brush 0
 {
 ( -80 64 0 ) ( -80 -64 0 ) ( -80 -64 -16 ) station/floor_1 0 0 180 1 -1
@@ -535,4 +536,37 @@
 ( 64 56 8 ) ( 64 56 40 ) ( 48 56 40 ) station/glass_1 0 -8 0 0.5 0.5
 ( 64 -56 40 ) ( 64 56 40 ) ( 64 56 8 ) station/glass_1 -8 -8 0 0.5 0.5
 }
+}
+// entity 1
+{
+"classname" "info_player_start"
+"origin" "-16 0 24"
+"angle" "180"
+}
+// entity 2
+{
+"classname" "light_point"
+"origin" "0 16 40"
+}
+// entity 3
+{
+"classname" "light_point"
+"origin" "-32 16 40"
+}
+// entity 4
+{
+"classname" "light_point"
+"origin" "-32 -16 40"
+}
+// entity 5
+{
+"classname" "light_point"
+"origin" "0 -16 40"
+}
+// entity 6
+{
+"classname" "light_point"
+"origin" "-168 0 40"
+"intensity" "500"
+"range" "4"
 }

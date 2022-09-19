@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
-    utils::BoxedFuture,
+    utils::{BoxedFuture, HashMap},
 };
 use shalrath::repr::{Brush, Map, TextureOffset};
 
@@ -39,9 +39,16 @@ async fn load_qmap<'a, 'b>(
 
     let mut mesh_counter = 0;
     for entity in qmap.0.iter() {
+        // Entities
+        let mut prop_map: HashMap<String, String> = HashMap::new();
         for prop in entity.properties.iter() {
-            println!("[property] {}: {}", prop.key, prop.value);
+            prop_map.insert(prop.key.clone(), prop.value.clone());
         }
+        if let Some(class_name) = prop_map.get("classname") {
+            build_entity(&mut world, class_name.clone(), prop_map);
+        }
+
+        // Brushes
         for brush in entity.brushes.iter() {
             let faces = faces_from_brush(brush)
                 .iter()
@@ -130,7 +137,7 @@ fn convert_face_coords(face: &Face) -> Face {
     }
 }
 
-fn convert_coords(map_point: Vec3) -> Vec3 {
+pub fn convert_coords(map_point: Vec3) -> Vec3 {
     Vec3 {
         x: map_point.x,
         y: map_point.z,

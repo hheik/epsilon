@@ -46,10 +46,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         color: Color::Hsla {
             hue: 0.0,
             saturation: 0.0,
-            lightness: 1.0,
+            lightness: 0.5,
             alpha: 1.0,
         },
-        brightness: 1.0,
+        brightness: 0.5,
     });
 
     // Scene

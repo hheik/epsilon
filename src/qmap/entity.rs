@@ -4,9 +4,10 @@ use bevy::{
     asset::{AssetPath, LoadContext, LoadedAsset},
     prelude::*,
     render::mesh::{Indices, PrimitiveTopology},
+    utils::HashMap,
 };
 
-use super::{types::*, Hull};
+use super::{loader::convert_coords, types::*, Hull};
 
 pub fn build_brush_entity<'a>(
     world: &mut World,
@@ -95,10 +96,53 @@ fn load_material<'a>(load_context: &'a mut LoadContext, path: String) -> Handle<
         metallic: 0.0,
         reflectance: 0.0,
         perceptual_roughness: 1.0,
-        unlit: true,
+        unlit: false,
         ..default()
     })
     .with_dependency(base_color_path);
 
     load_context.set_labeled_asset(&path, material)
+}
+
+pub fn build_entity(world: &mut World, class_name: String, prop_map: HashMap<String, String>) {
+    match class_name.as_str() {
+        "light_point" => {
+            let default_origin = &"0 0 0".to_string();
+            let origin: Vec<&str> = prop_map
+                .get("origin")
+                .unwrap_or(default_origin)
+                .split_ascii_whitespace()
+                .collect();
+            let origin = if origin.len() == 3 {
+                Vec3 {
+                    x: origin[0].parse::<f32>().unwrap_or_default(),
+                    y: origin[1].parse::<f32>().unwrap_or_default(),
+                    z: origin[2].parse::<f32>().unwrap_or_default(),
+                }
+            } else {
+                Vec3::ZERO
+            };
+            let origin = convert_coords(origin);
+            world.spawn().insert_bundle(PointLightBundle {
+                point_light: PointLight {
+                    intensity: prop_map
+                        .get("intensity")
+                        .unwrap_or(&"800.0".to_string())
+                        .parse::<f32>()
+                        .unwrap_or_default(),
+                    range: prop_map
+                        .get("range")
+                        .unwrap_or(&"8.0".to_string())
+                        .parse::<f32>()
+                        .unwrap_or_default(),
+                    color: Color::hsl(0.50, 0.15, 0.7),
+                    // color: Color::WHITE,
+                    ..default()
+                },
+                transform: Transform::from_xyz(origin.x, origin.y, origin.z),
+                ..default()
+            });
+        }
+        _ => (),
+    };
 }

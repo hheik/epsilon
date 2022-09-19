@@ -1,0 +1,11 @@
+@SolidClass = worldspawn : "World entity" []
+
+@baseclass size(-8 -8 -24, 8 8 16) color(0 255 0) = PlayerClass []
+
+@PointClass base(PlayerClass) = info_player_start : "Player 1 start" []
+
+@PointClass size(-8 -8 -8, 8 8 8) = light_point : "Point light"
+[
+    intensity(integer) : "Intensity" : 250 : "Light intensity"
+    range(integer) : "Range" : 8.0 : "Light range"
+]
