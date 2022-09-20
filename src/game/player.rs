@@ -27,10 +27,11 @@ pub fn player_setup(mut commands: Commands) {
             kinematic,
             ..default()
         })
-        .insert(MovementProperties {
+        .insert(KinematicProperties {
             speed: 4.0,
             acceleration: 4.0,
             friction: 4.0,
+            turning_lerp: 20.0,
         })
         .insert(KinematicInput::default())
         .with_children(|build| {
@@ -80,16 +81,17 @@ fn input_to_axis(negative: bool, positive: bool) -> f32 {
 
 pub fn player_camera(
     input: Res<Input<KeyCode>>,
-    time: Res<Time>,
     mut mouse_motion_events: EventReader<MouseMotion>,
-    mut query: Query<&mut Transform, With<PlayerInput>>,
+    mut query: Query<(&mut KinematicInput, &Transform), With<PlayerInput>>,
 ) {
-    for mut transform in query.iter_mut() {
+    for (mut kinematic, transform) in query.iter_mut() {
+        let mut x = 0.0;
+        let mut y = 0.0;
+        let z = input_to_axis(input.pressed(KeyCode::E), input.pressed(KeyCode::Q)) * PI * 0.5;
         for event in mouse_motion_events.iter() {
-            transform.rotate_local_x(event.delta.y * -0.005);
-            transform.rotate_local_y(event.delta.x * -0.005);
+            x += event.delta.y * -0.1;
+            y += event.delta.x * -0.1;
         }
-        let roll = input_to_axis(input.pressed(KeyCode::E), input.pressed(KeyCode::Q));
-        transform.rotate_local_z(roll * PI * time.delta_seconds());
+        kinematic.turning = transform.rotation * Vec3 { x, y, z };
     }
 }

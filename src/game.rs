@@ -3,10 +3,7 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
-use self::{
-    kinematic::{kinematic_collisions, kinematic_movement},
-    player::*,
-};
+use self::{kinematic::kinematic_movement, player::*};
 
 mod kinematic;
 mod player;
@@ -25,7 +22,6 @@ pub fn init() {
         .add_system(player_system)
         .add_system(player_camera)
         .add_system(kinematic_movement)
-        .add_system(kinematic_collisions)
         .run();
 }
 

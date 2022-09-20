@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::util::math::{inverse_lerp, lerp};
+use crate::util::math::{inverse_lerp, lerp, vec3_lerp};
 
 #[derive(Bundle)]
 pub struct KinematicBundle {
@@ -34,15 +34,17 @@ impl Default for KinematicBundle {
 }
 
 #[derive(Default, Component)]
-pub struct MovementProperties {
+pub struct KinematicProperties {
     pub speed: f32,
     pub acceleration: f32,
     pub friction: f32,
+    pub turning_lerp: f32,
 }
 
 #[derive(Default, Component)]
 pub struct KinematicInput {
     pub movement: Vec3,
+    pub turning: Vec3,
 }
 
 pub fn kinematic_movement(
@@ -50,17 +52,18 @@ pub fn kinematic_movement(
     mut query: Query<(
         &mut Velocity,
         Option<&KinematicInput>,
-        Option<&MovementProperties>,
+        Option<&KinematicProperties>,
     )>,
 ) {
     for (mut velocity, input, props) in query.iter_mut() {
         let default = &KinematicInput::default();
         let input = input.unwrap_or(default);
 
-        let default = &MovementProperties {
+        let default = &KinematicProperties {
             speed: 1.0,
             acceleration: 20.0,
             friction: 40.0,
+            turning_lerp: 5.0,
         };
         let props = props.unwrap_or(default);
 
@@ -92,14 +95,15 @@ pub fn kinematic_movement(
             target_velocity,
             velocity_change_speed * time.delta_seconds(),
         );
-    }
-}
 
-pub fn kinematic_collisions(mut collision_events: EventReader<CollisionEvent>) {
-    // TODO: Possibly use KinematicVelocityBased rigidbody and handle collisions?
-    // for event in collision_events.iter() {
-    //     println!("collision: {event:?}");
-    // }
+        let target_angular_velocity = input.turning;
+
+        velocity.angvel = vec3_lerp(
+            velocity.angvel,
+            target_angular_velocity,
+            props.turning_lerp * time.delta_seconds(),
+        );
+    }
 }
 
 fn move_towards(from: Vec3, to: Vec3, amount: f32) -> Vec3 {
