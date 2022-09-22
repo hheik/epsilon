@@ -1,4 +1,7 @@
-use self::loader::QMapLoader;
+use self::{
+    loader::QMapLoader,
+    types::{PointEntity, MAP_SCALE},
+};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -12,7 +15,10 @@ impl Plugin for QMapPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_asset_loader::<QMapLoader>()
             .register_type::<Hull>()
-            .add_system(collision_spawner);
+            .add_event::<MapBuild>()
+            .add_system(collision_spawner)
+            .add_system(map_events)
+            .add_system(create_lights);
     }
 }
 
@@ -21,7 +27,7 @@ impl Plugin for QMapPlugin {
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Hull {
-    points: Vec<Vec3>,
+    pub points: Vec<Vec3>,
 }
 
 fn collision_spawner(
@@ -35,4 +41,52 @@ fn collision_spawner(
             Collider::convex_hull(&hull.points[..]).expect("Failed to create collider for brush");
         commands.entity(entity).insert(collider);
     }
+}
+
+fn map_events() {
+    let mut events = Events::<MapBuild>::default();
+    events.update();
+}
+
+pub enum MapBuild {
+    Entity(PointEntity),
+}
+
+fn create_lights(mut events: EventReader<MapBuild>, mut commands: Commands) {
+    events.iter().for_each(|event| match event {
+        MapBuild::Entity(entity) => match entity.name.as_str() {
+            "light_point" => {
+                let position = convert_coords(entity.position);
+                commands.spawn().insert_bundle(PointLightBundle {
+                    point_light: PointLight {
+                        intensity: entity
+                            .properties
+                            .get("intensity")
+                            .unwrap_or(&"800.0".to_string())
+                            .parse::<f32>()
+                            .unwrap_or_default(),
+                        range: entity
+                            .properties
+                            .get("range")
+                            .unwrap_or(&"15.0".to_string())
+                            .parse::<f32>()
+                            .unwrap_or_default(),
+                        color: Color::hsl(0.50, 0.15, 0.7),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(position.x, position.y, position.z),
+                    ..default()
+                });
+            }
+            _ => (),
+        },
+    })
+}
+
+pub fn convert_coords(map_point: Vec3) -> Vec3 {
+    Vec3 {
+        x: map_point.x,
+        y: map_point.z,
+        z: -map_point.y,
+    } * MAP_SCALE
 }

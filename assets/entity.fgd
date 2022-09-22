@@ -1,6 +1,6 @@
 @SolidClass = worldspawn : "World entity" []
 
-@baseclass size(-8 -8 -24, 8 8 16) color(0 255 0) = PlayerClass []
+@baseclass size(-8 -8 -8, 8 8 8) color(0 255 0) = PlayerClass []
 
 @PointClass base(PlayerClass) = info_player_start : "Player 1 start" []
 

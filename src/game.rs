@@ -17,8 +17,8 @@ pub fn init() {
         .add_plugin(QMapPlugin)
         .add_startup_system(map_setup)
         .add_startup_system(setup)
-        .add_startup_system(player_setup)
         .add_system(mouse_capture)
+        .add_system(player_spawn)
         .add_system(player_system)
         .add_system(player_camera)
         .add_system(kinematic_movement)
@@ -27,10 +27,7 @@ pub fn init() {
 
 fn map_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(SceneBundle {
-        scene: asset_server.load("levels/station.map"),
-        // scene: asset_server.load("levels/simple.map"),
-        // scene: asset_server.load("levels/in_hull.map"),
-        // scene: asset_server.load("levels/cube.map"),
+        scene: asset_server.load("levels/default.map"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     });

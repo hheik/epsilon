@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 pub use bevy::prelude::*;
-use shalrath::repr::TrianglePlane;
+use shalrath::repr::{Properties, TrianglePlane};
 
 pub const INVERSE_SCALE_FACTOR: f32 = 16.0;
 pub const MAP_SCALE: f32 = 1.0 / INVERSE_SCALE_FACTOR;
@@ -77,4 +79,49 @@ fn vec2_to_arr(vec: Vec2) -> [f32; 2] {
 
 fn vec3_to_arr(vec: Vec3) -> [f32; 3] {
     [vec.x, vec.y, vec.z]
+}
+
+pub struct PointEntity {
+    pub name: String,
+    pub position: Vec3,
+    pub properties: HashMap<String, String>,
+}
+
+impl PointEntity {
+    pub fn from_properties(props: &Properties) -> Option<Self> {
+        if props.len() == 0 {
+            return None;
+        }
+        let mut properties: HashMap<String, String> = HashMap::new();
+        for property in props.iter() {
+            properties.insert(property.key.clone(), property.value.clone());
+        }
+        let name = match properties.get("classname") {
+            Some(value) => value,
+            None => "missing_entity",
+        }
+        .to_string();
+        let position = parse_position(match properties.get("origin") {
+            Some(value) => value,
+            None => "0 0 0",
+        });
+        Some(PointEntity {
+            name,
+            position,
+            properties,
+        })
+    }
+}
+
+pub fn parse_position(value: &str) -> Vec3 {
+    let position: Vec<&str> = value.split_ascii_whitespace().collect();
+    if position.len() == 3 {
+        Vec3 {
+            x: position[0].parse::<f32>().unwrap_or_default(),
+            y: position[1].parse::<f32>().unwrap_or_default(),
+            z: position[2].parse::<f32>().unwrap_or_default(),
+        }
+    } else {
+        Vec3::ZERO
+    }
 }

@@ -3,6 +3,8 @@ use std::f32::consts::PI;
 use bevy::{input::mouse::MouseMotion, prelude::*};
 use bevy_rapier3d::prelude::*;
 
+use crate::qmap::{convert_coords, MapBuild};
+
 use super::kinematic::*;
 
 #[derive(Default, Component, Reflect)]
@@ -14,36 +16,6 @@ pub struct PlayerBundle {
     control: PlayerInput,
     #[bundle]
     kinematic: KinematicBundle,
-}
-
-pub fn player_setup(mut commands: Commands) {
-    let mut kinematic = KinematicBundle::default();
-    kinematic.collider = Collider::ball(0.3);
-    kinematic.transform = TransformBundle::from(Transform::from_xyz(0.0, 1.0, 0.0));
-
-    commands
-        .spawn()
-        .insert_bundle(PlayerBundle {
-            kinematic,
-            ..default()
-        })
-        .insert(KinematicProperties {
-            speed: 4.0,
-            acceleration: 4.0,
-            friction: 4.0,
-            turning_lerp: 20.0,
-        })
-        .insert(KinematicInput::default())
-        .with_children(|build| {
-            build.spawn().insert_bundle(Camera3dBundle {
-                projection: bevy::render::camera::Projection::Perspective(PerspectiveProjection {
-                    fov: f32::to_radians(80.0),
-                    ..default()
-                }),
-                transform: Transform::from_xyz(0.0, 0.0, 0.3),
-                ..default()
-            });
-        });
 }
 
 pub fn player_system(
@@ -94,4 +66,47 @@ pub fn player_camera(
         }
         kinematic.turning = transform.rotation * Vec3 { x, y, z };
     }
+}
+
+pub fn player_spawn(mut events: EventReader<MapBuild>, mut commands: Commands) {
+    events.iter().for_each(|event| match event {
+        MapBuild::Entity(entity) => match entity.name.as_str() {
+            "info_player_start" => {
+                println!("event");
+                let position = convert_coords(entity.position);
+
+                let radius = 0.3;
+                let mut kinematic = KinematicBundle::default();
+                kinematic.collider = Collider::ball(radius);
+                kinematic.transform =
+                    TransformBundle::from(Transform::from_xyz(position.x, position.y, position.z));
+
+                commands
+                    .spawn()
+                    .insert_bundle(PlayerBundle {
+                        kinematic,
+                        ..default()
+                    })
+                    .insert(KinematicProperties {
+                        speed: 4.0,
+                        acceleration: 4.0,
+                        friction: 4.0,
+                        turning_lerp: 20.0,
+                    })
+                    .insert(KinematicInput::default())
+                    .with_children(|build| {
+                        build.spawn().insert_bundle(Camera3dBundle {
+                            projection: bevy::render::camera::Projection::Perspective(
+                                PerspectiveProjection {
+                                    fov: f32::to_radians(80.0),
+                                    ..default()
+                                },
+                            ),
+                            ..default()
+                        });
+                    });
+            }
+            _ => println!("event???"),
+        },
+    })
 }
