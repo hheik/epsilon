@@ -47,7 +47,8 @@ async fn load_qmap<'a, 'b>(
     let mut root = world.spawn();
     
     let id = NEXT_WORLD_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    root.insert(WorldData { id });
+    root.insert_bundle(SpatialBundle::default())
+        .insert(WorldData { id });
 
     root.with_children(|builder| {
         let mut mesh_counter = 0;

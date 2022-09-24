@@ -3,10 +3,11 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
-use self::{kinematic::kinematic_movement, player::*};
+use self::{kinematic::kinematic_movement, player::*, light::*};
 
 pub mod kinematic;
 pub mod player;
+pub mod light;
 
 pub fn init() {
     App::new()
@@ -15,10 +16,11 @@ pub fn init() {
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(QMapPlugin)
+        .add_plugin(LightPlugin)
         .add_startup_system(map_setup)
         .add_startup_system(setup)
         .add_system(mouse_capture)
-        // .add_system(player_spawn)
+        .add_system(player_spawn)
         .add_system(player_system)
         .add_system(player_camera)
         .add_system(kinematic_movement)

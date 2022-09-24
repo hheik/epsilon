@@ -3,16 +3,10 @@ use std::path::Path;
 use bevy::{
     asset::{AssetPath, LoadContext, LoadedAsset},
     prelude::*,
-    render::mesh::{Indices, PrimitiveTopology}, ecs::world::EntityMut,
+    render::mesh::{Indices, PrimitiveTopology},
 };
 
-// use self::light::*;
-// use self::player::*;
-
 use super::{types::*, Hull, component::MapPointEntity};
-
-// mod light;
-// mod player;
 
 pub fn build_brush<'a>(
     builder: &mut WorldChildBuilder,

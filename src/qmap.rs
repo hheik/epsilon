@@ -52,37 +52,6 @@ pub enum MapBuild {
     PointEntity(MapPointEntity),
 }
 
-// fn create_lights(mut events: EventReader<MapBuild>, mut commands: Commands) {
-//     events.iter().for_each(|event| match event {
-//         MapBuild::PointEntity(entity) => match entity.name.as_str() {
-//             "light_point" => {
-//                 let position = convert_coords(entity.position);
-//                 commands.spawn().insert_bundle(PointLightBundle {
-//                     point_light: PointLight {
-//                         intensity: entity
-//                             .properties
-//                             .get("intensity")
-//                             .unwrap_or(&"800.0".to_string())
-//                             .parse::<f32>()
-//                             .unwrap_or_default(),
-//                         range: entity
-//                             .properties
-//                             .get("range")
-//                             .unwrap_or(&"15.0".to_string())
-//                             .parse::<f32>()
-//                             .unwrap_or_default(),
-//                         color: Color::hsl(0.50, 0.15, 0.7),
-//                         ..default()
-//                     },
-//                     transform: Transform::from_xyz(position.x, position.y, position.z),
-//                     ..default()
-//                 });
-//             }
-//             _ => (),
-//         },
-//     })
-// }
-
 pub fn convert_coords(map_point: Vec3) -> Vec3 {
     Vec3 {
         x: map_point.x,
@@ -91,23 +60,46 @@ pub fn convert_coords(map_point: Vec3) -> Vec3 {
     } * MAP_SCALE
 }
 
+// TODO: change to use Added<T> change detection
 #[derive(Default)]
 pub struct CreatedWorld {
     pub maps: HashSet<usize>
 }
 
 fn map_event_emitter(
-    map_query: Query<(Entity, &WorldData)>,
-    point_entity_query: Query<(Entity, &MapPointEntity)>,
-    parent_query: Query<&Parent, Option<With<WorldData>>>,
+    map_query: Query<&WorldData>,
+    point_entity_query: Query<(&Parent, &MapPointEntity)>,
+    parent_query: Query<(Option<&Parent>, Option<&WorldData>)>,
     mut created_worlds: ResMut<CreatedWorld>,
-    events: EventWriter<MapBuild>,
+    mut events: EventWriter<MapBuild>,
 ) {
-    for (root, world_data) in map_query.iter() {
-        if let None = created_worlds.maps.get(&world_data.id) {
-            created_worlds.maps.insert(world_data.id);
-            for (child, map_entity) in point_entity_query.iter() {
+    for root_world_data in map_query.iter() {
+        if let None = created_worlds.maps.get(&root_world_data.id) {
+            created_worlds.maps.insert(root_world_data.id);
+            for (entity, map_entity) in point_entity_query.iter() {
                 // Check if the entity is a child of map root
+                let mut found = false;
+                let mut current = entity;
+                loop {
+                    if let Ok((parent, world_data)) = parent_query.get(current.get()) {
+                        if let Some(world_data) = world_data {
+                            if world_data.id == root_world_data.id {
+                                found = true;
+                                break;
+                            }
+                            if let Some(parent) = parent {
+                                current = parent;
+                            } else {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                };
+                if found {
+                    events.send(MapBuild::PointEntity(map_entity.clone()));
+                }
             }
         }
     }

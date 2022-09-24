@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use bevy::{prelude::*, ecs::world::WorldId};
+use bevy::prelude::*;
 use shalrath::repr::Properties;
 
 #[derive(Default, Component, Clone, Reflect)]
