@@ -5,8 +5,8 @@ use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
 use self::{kinematic::kinematic_movement, player::*};
 
-mod kinematic;
-mod player;
+pub mod kinematic;
+pub mod player;
 
 pub fn init() {
     App::new()
@@ -18,7 +18,7 @@ pub fn init() {
         .add_startup_system(map_setup)
         .add_startup_system(setup)
         .add_system(mouse_capture)
-        .add_system(player_spawn)
+        // .add_system(player_spawn)
         .add_system(player_system)
         .add_system(player_camera)
         .add_system(kinematic_movement)

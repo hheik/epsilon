@@ -6,6 +6,6 @@
 
 @PointClass size(-8 -8 -8, 8 8 8) = light_point : "Point light"
 [
-    intensity(integer) : "Intensity" : 250 : "Light intensity"
-    range(integer) : "Range" : 8.0 : "Light range"
+    intensity(integer) : "Intensity" : 800 : "Light intensity"
+    range(integer) : "Range" : 15.0 : "Light range"
 ]

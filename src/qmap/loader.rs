@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, sync::atomic::AtomicUsize};
 
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
@@ -7,7 +7,14 @@ use bevy::{
 };
 use shalrath::repr::{Brush, Map, TextureOffset};
 
-use super::{convert_coords, entity::*, types::*, MapBuild};
+use super::{
+    convert_coords,
+    build::*,
+    types::*,
+    component::*
+};
+
+static NEXT_WORLD_ID: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Default)]
 pub struct QMapLoader;
@@ -36,24 +43,32 @@ async fn load_qmap<'a, 'b>(
         .expect("Failed to parse map");
 
     let mut world = World::default();
+    
+    let mut root = world.spawn();
+    
+    let id = NEXT_WORLD_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    root.insert(WorldData { id });
 
-    let mut events = Events::<MapBuild>::default();
-    let mut mesh_counter = 0;
-    for entity in qmap.0.iter() {
-        // Entities
-        if let Some(point_entity) = PointEntity::from_properties(&entity.properties) {
-            events.send(MapBuild::Entity(point_entity));
-        }
-
-        // Brushes
-        for brush in entity.brushes.iter() {
-            let faces = faces_from_brush(brush)
-                .iter()
-                .map(convert_face_coords)
-                .collect();
-            build_brush_entity(&mut world, load_context, &mut mesh_counter, faces);
-        }
-    }
+    root.with_children(|builder| {
+        let mut mesh_counter = 0;
+        for entity in qmap.0.iter() {
+            // Entities
+            if let Some(point_entity) = MapPointEntity::from_properties(&entity.properties) {
+                let mut point_entity = point_entity.clone();
+                point_entity.transform = point_entity.transform.with_translation(convert_coords(point_entity.transform.translation));
+                build_point_entity(builder, point_entity);
+            }
+    
+            // Brushes
+            for brush in entity.brushes.iter() {
+                let faces = faces_from_brush(brush)
+                    .iter()
+                    .map(convert_face_coords)
+                    .collect();
+                build_brush(builder, load_context, &mut mesh_counter, faces);
+            }
+        }    
+    });
 
     let scene = Scene::new(world);
 

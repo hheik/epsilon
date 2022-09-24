@@ -3,13 +3,19 @@ use std::path::Path;
 use bevy::{
     asset::{AssetPath, LoadContext, LoadedAsset},
     prelude::*,
-    render::mesh::{Indices, PrimitiveTopology},
+    render::mesh::{Indices, PrimitiveTopology}, ecs::world::EntityMut,
 };
 
-use super::{types::*, Hull};
+// use self::light::*;
+// use self::player::*;
 
-pub fn build_brush_entity<'a>(
-    world: &mut World,
+use super::{types::*, Hull, component::MapPointEntity};
+
+// mod light;
+// mod player;
+
+pub fn build_brush<'a>(
+    builder: &mut WorldChildBuilder,
     load_context: &'a mut LoadContext,
     mesh_counter: &mut u16,
     faces: Vec<Face>,
@@ -45,7 +51,7 @@ pub fn build_brush_entity<'a>(
         let material = load_material(load_context, format!("textures/{}", face.texture));
 
         children.push(
-            world
+            builder
                 .spawn()
                 .insert_bundle(PbrBundle {
                     mesh,
@@ -68,7 +74,7 @@ pub fn build_brush_entity<'a>(
         *mesh_counter += 1;
     }
 
-    world
+    builder
         .spawn()
         .insert_bundle(TransformBundle::from(Transform::from_xyz(
             origin.x, origin.y, origin.z,
@@ -101,4 +107,14 @@ fn load_material<'a>(load_context: &'a mut LoadContext, path: String) -> Handle<
     .with_dependency(base_color_path);
 
     load_context.set_labeled_asset(&path, material)
+}
+
+pub fn build_point_entity(builder: &mut WorldChildBuilder, entity: MapPointEntity) {
+    let transform = entity.transform.clone();
+    builder.spawn()
+        .insert(entity)
+        .insert_bundle(TransformBundle {
+            local: transform,
+            ..default()
+        });
 }

@@ -1,11 +1,14 @@
+use std::collections::HashSet;
+
 use self::{
     loader::QMapLoader,
-    types::{PointEntity, MAP_SCALE},
+    types::MAP_SCALE, component::{MapPointEntity, WorldData},
 };
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-mod entity;
+mod build;
+mod component;
 mod loader;
 mod types;
 
@@ -14,11 +17,13 @@ pub struct QMapPlugin;
 impl Plugin for QMapPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_asset_loader::<QMapLoader>()
-            .register_type::<Hull>()
             .add_event::<MapBuild>()
+            .register_type::<Hull>()
+            .register_type::<WorldData>()
+            .register_type::<MapPointEntity>()
+            .insert_resource(CreatedWorld::default())
             .add_system(collision_spawner)
-            .add_system(map_events)
-            .add_system(create_lights);
+            .add_system(map_event_emitter);
     }
 }
 
@@ -43,45 +48,40 @@ fn collision_spawner(
     }
 }
 
-fn map_events() {
-    let mut events = Events::<MapBuild>::default();
-    events.update();
-}
-
 pub enum MapBuild {
-    Entity(PointEntity),
+    PointEntity(MapPointEntity),
 }
 
-fn create_lights(mut events: EventReader<MapBuild>, mut commands: Commands) {
-    events.iter().for_each(|event| match event {
-        MapBuild::Entity(entity) => match entity.name.as_str() {
-            "light_point" => {
-                let position = convert_coords(entity.position);
-                commands.spawn().insert_bundle(PointLightBundle {
-                    point_light: PointLight {
-                        intensity: entity
-                            .properties
-                            .get("intensity")
-                            .unwrap_or(&"800.0".to_string())
-                            .parse::<f32>()
-                            .unwrap_or_default(),
-                        range: entity
-                            .properties
-                            .get("range")
-                            .unwrap_or(&"15.0".to_string())
-                            .parse::<f32>()
-                            .unwrap_or_default(),
-                        color: Color::hsl(0.50, 0.15, 0.7),
-                        ..default()
-                    },
-                    transform: Transform::from_xyz(position.x, position.y, position.z),
-                    ..default()
-                });
-            }
-            _ => (),
-        },
-    })
-}
+// fn create_lights(mut events: EventReader<MapBuild>, mut commands: Commands) {
+//     events.iter().for_each(|event| match event {
+//         MapBuild::PointEntity(entity) => match entity.name.as_str() {
+//             "light_point" => {
+//                 let position = convert_coords(entity.position);
+//                 commands.spawn().insert_bundle(PointLightBundle {
+//                     point_light: PointLight {
+//                         intensity: entity
+//                             .properties
+//                             .get("intensity")
+//                             .unwrap_or(&"800.0".to_string())
+//                             .parse::<f32>()
+//                             .unwrap_or_default(),
+//                         range: entity
+//                             .properties
+//                             .get("range")
+//                             .unwrap_or(&"15.0".to_string())
+//                             .parse::<f32>()
+//                             .unwrap_or_default(),
+//                         color: Color::hsl(0.50, 0.15, 0.7),
+//                         ..default()
+//                     },
+//                     transform: Transform::from_xyz(position.x, position.y, position.z),
+//                     ..default()
+//                 });
+//             }
+//             _ => (),
+//         },
+//     })
+// }
 
 pub fn convert_coords(map_point: Vec3) -> Vec3 {
     Vec3 {
@@ -89,4 +89,26 @@ pub fn convert_coords(map_point: Vec3) -> Vec3 {
         y: map_point.z,
         z: -map_point.y,
     } * MAP_SCALE
+}
+
+#[derive(Default)]
+pub struct CreatedWorld {
+    pub maps: HashSet<usize>
+}
+
+fn map_event_emitter(
+    map_query: Query<(Entity, &WorldData)>,
+    point_entity_query: Query<(Entity, &MapPointEntity)>,
+    parent_query: Query<&Parent, Option<With<WorldData>>>,
+    mut created_worlds: ResMut<CreatedWorld>,
+    events: EventWriter<MapBuild>,
+) {
+    for (root, world_data) in map_query.iter() {
+        if let None = created_worlds.maps.get(&world_data.id) {
+            created_worlds.maps.insert(world_data.id);
+            for (child, map_entity) in point_entity_query.iter() {
+                // Check if the entity is a child of map root
+            }
+        }
+    }
 }

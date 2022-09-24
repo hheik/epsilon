@@ -35,6 +35,7 @@ impl Plugin for ImageImportPlugin {
 
 fn event_handler(
     mut events: EventReader<AssetEvent<StandardMaterial>>,
+    // mut a_events: EventReader<bevy::prelude::>,
     mut image_importer: ResMut<ImageImporter>,
 ) {
     for event in events.iter() {
