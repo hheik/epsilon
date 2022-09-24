@@ -3,11 +3,12 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
-use self::{kinematic::kinematic_movement, player::*, light::*};
+use self::{kinematic::kinematic_movement, player::*, light::*, hierarchy::*};
 
 pub mod kinematic;
 pub mod player;
 pub mod light;
+pub mod hierarchy;
 
 pub fn init() {
     App::new()
@@ -17,6 +18,7 @@ pub fn init() {
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(QMapPlugin)
         .add_plugin(LightPlugin)
+        .add_plugin(HierarchyVisualizerPlugin)
         .add_startup_system(map_setup)
         .add_startup_system(setup)
         .add_system(mouse_capture)
@@ -41,18 +43,20 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         color: Color::Hsla {
             hue: 0.0,
             saturation: 0.0,
-            lightness: 0.5,
+            lightness: 1.0,
             alpha: 1.0,
         },
-        brightness: 0.5,
+        brightness: 1.0,
     });
 
     // Scene
-    commands.spawn_bundle(SceneBundle {
-        scene: asset_server.load("scenes/axis.gltf#Scene0"),
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
-        ..default()
-    });
+    commands.spawn()
+        .insert(Name::new("axis mesh"))
+        .insert_bundle(SceneBundle {
+            scene: asset_server.load("scenes/axis.gltf#Scene0"),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..default()
+        });
 }
 
 fn mouse_capture(

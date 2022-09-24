@@ -63,7 +63,7 @@ pub fn parse_position(value: &str) -> Vec3 {
 pub fn parse_angle(value: &str) -> Quat {
     let angle = value.parse::<f32>().expect("Invalid angle value") - 90.0;
     let angle = angle.to_radians();
-    //TODO: Check that the rotation directions match
+    // TODO: check if this and/or player camera is wrong
     Quat::from_rotation_y(angle)
 }
 

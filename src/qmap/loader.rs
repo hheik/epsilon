@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, sync::atomic::AtomicUsize};
+use std::f32::consts::PI;
 
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
@@ -13,8 +13,6 @@ use super::{
     types::*,
     component::*
 };
-
-static NEXT_WORLD_ID: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Default)]
 pub struct QMapLoader;
@@ -43,12 +41,9 @@ async fn load_qmap<'a, 'b>(
         .expect("Failed to parse map");
 
     let mut world = World::default();
-    
     let mut root = world.spawn();
-    
-    let id = NEXT_WORLD_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     root.insert_bundle(SpatialBundle::default())
-        .insert(WorldData { id });
+        .insert(Name::new("map"));
 
     root.with_children(|builder| {
         let mut mesh_counter = 0;

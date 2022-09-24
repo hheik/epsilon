@@ -47,6 +47,7 @@ pub fn build_brush<'a>(
         children.push(
             builder
                 .spawn()
+                .insert(Name::new("face"))
                 .insert_bundle(PbrBundle {
                     mesh,
                     material,
@@ -70,6 +71,7 @@ pub fn build_brush<'a>(
 
     builder
         .spawn()
+        .insert(Name::new("brush"))
         .insert_bundle(TransformBundle::from(Transform::from_xyz(
             origin.x, origin.y, origin.z,
         )))
@@ -106,9 +108,10 @@ fn load_material<'a>(load_context: &'a mut LoadContext, path: String) -> Handle<
 pub fn build_point_entity(builder: &mut WorldChildBuilder, entity: MapPointEntity) {
     let transform = entity.transform.clone();
     builder.spawn()
+        .insert(Name::new(entity.name.clone()))
         .insert(entity)
-        .insert_bundle(TransformBundle {
-            local: transform,
+        .insert_bundle(SpatialBundle {
+            transform,
             ..default()
         });
 }
