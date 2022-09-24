@@ -7,12 +7,7 @@ use bevy::{
 };
 use shalrath::repr::{Brush, Map, TextureOffset};
 
-use super::{
-    convert_coords,
-    build::*,
-    types::*,
-    component::*
-};
+use super::{build::*, component::*, convert_coords, types::*};
 
 #[derive(Default)]
 pub struct QMapLoader;
@@ -51,10 +46,12 @@ async fn load_qmap<'a, 'b>(
             // Entities
             if let Some(point_entity) = MapPointEntity::from_properties(&entity.properties) {
                 let mut point_entity = point_entity.clone();
-                point_entity.transform = point_entity.transform.with_translation(convert_coords(point_entity.transform.translation));
+                point_entity.transform = point_entity
+                    .transform
+                    .with_translation(convert_coords(point_entity.transform.translation));
                 build_point_entity(builder, point_entity);
             }
-    
+
             // Brushes
             for brush in entity.brushes.iter() {
                 let faces = faces_from_brush(brush)
@@ -63,7 +60,7 @@ async fn load_qmap<'a, 'b>(
                     .collect();
                 build_brush(builder, load_context, &mut mesh_counter, faces);
             }
-        }    
+        }
     });
 
     let scene = Scene::new(world);

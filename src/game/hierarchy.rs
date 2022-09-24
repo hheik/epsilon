@@ -15,18 +15,16 @@ pub struct HierarchyNode {
 }
 
 pub struct Hierarchy {
-    pub nodes: Vec<HierarchyNode>
+    pub nodes: Vec<HierarchyNode>,
 }
 
 #[derive(Default, Component)]
 pub struct HierarchyVisualizer;
 
-fn hierarchy_setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn hierarchy_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("fonts/venice_classic.ttf");
-    commands.spawn()
+    commands
+        .spawn()
         .insert(Name::new("hierarchy visualizer"))
         .insert(HierarchyVisualizer)
         .insert_bundle(
@@ -35,7 +33,7 @@ fn hierarchy_setup(
                 TextStyle {
                     font: font.clone(),
                     color: Color::WHITE,
-                    font_size: 13.0
+                    font_size: 13.0,
                 },
             )
             .with_style(Style {
@@ -84,7 +82,7 @@ fn hierarchy_update(
                     font: font.clone(),
                     color: Color::WHITE,
                     font_size: 13.0,
-                }
+                },
             });
             sections.push(TextSection {
                 value: format!("{}.{}\n", node.entity.id(), node.entity.generation()),
@@ -92,17 +90,22 @@ fn hierarchy_update(
                     font: font.clone(),
                     color: Color::GRAY,
                     font_size: 13.0,
-                }
+                },
             });
         }
         text.sections = sections;
     }
 }
 
-fn traverse_hierarchy(current: Entity, depth: usize, child_query: &Query<&Children>, nodes: &mut Vec<HierarchyNode>) {
+fn traverse_hierarchy(
+    current: Entity,
+    depth: usize,
+    child_query: &Query<&Children>,
+    nodes: &mut Vec<HierarchyNode>,
+) {
     nodes.push(HierarchyNode {
         entity: current,
-        depth
+        depth,
     });
     if let Ok(children) = child_query.get(current) {
         for child in children {

@@ -68,7 +68,10 @@ pub fn player_camera(
     }
 }
 
-pub fn player_spawn(mut commands: Commands, query: Query<(Entity, &MapPointEntity), Added<MapPointEntity>>) {
+pub fn player_spawn(
+    mut commands: Commands,
+    query: Query<(Entity, &MapPointEntity), Added<MapPointEntity>>,
+) {
     for (entity, map_point_entity) in query.iter() {
         match map_point_entity.name.as_str() {
             "info_player_start" => {
@@ -93,9 +96,8 @@ pub fn player_spawn(mut commands: Commands, query: Query<(Entity, &MapPointEntit
                         })
                         .insert(KinematicInput::default())
                         .with_children(|build| {
-                            build.spawn()
-                                .insert(Name::new("camera"))
-                                .insert_bundle(Camera3dBundle {
+                            build.spawn().insert(Name::new("camera")).insert_bundle(
+                                Camera3dBundle {
                                     projection: bevy::render::camera::Projection::Perspective(
                                         PerspectiveProjection {
                                             fov: f32::to_radians(80.0),
@@ -103,11 +105,12 @@ pub fn player_spawn(mut commands: Commands, query: Query<(Entity, &MapPointEntit
                                         },
                                     ),
                                     ..default()
-                                });
+                                },
+                            );
                         });
                 });
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 }

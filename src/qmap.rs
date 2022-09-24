@@ -1,7 +1,4 @@
-use self::{
-    loader::QMapLoader,
-    types::MAP_SCALE, component::MapPointEntity,
-};
+use self::{component::MapPointEntity, loader::QMapLoader, types::MAP_SCALE};
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 

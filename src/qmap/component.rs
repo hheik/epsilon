@@ -70,5 +70,5 @@ pub fn parse_angle(value: &str) -> Quat {
 #[derive(Default, Component, Reflect, Debug)]
 #[reflect(Component)]
 pub struct WorldData {
-    pub id: usize
+    pub id: usize,
 }

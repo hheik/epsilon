@@ -3,12 +3,12 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
-use self::{kinematic::kinematic_movement, player::*, light::*, hierarchy::*};
+use self::{hierarchy::*, kinematic::kinematic_movement, light::*, player::*};
 
-pub mod kinematic;
-pub mod player;
-pub mod light;
 pub mod hierarchy;
+pub mod kinematic;
+pub mod light;
+pub mod player;
 
 pub fn init() {
     App::new()
@@ -50,7 +50,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 
     // Scene
-    commands.spawn()
+    commands
+        .spawn()
         .insert(Name::new("axis mesh"))
         .insert_bundle(SceneBundle {
             scene: asset_server.load("scenes/axis.gltf#Scene0"),

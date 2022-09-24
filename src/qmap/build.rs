@@ -6,7 +6,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
 };
 
-use super::{types::*, Hull, component::MapPointEntity};
+use super::{component::MapPointEntity, types::*, Hull};
 
 pub fn build_brush<'a>(
     builder: &mut WorldChildBuilder,
@@ -107,7 +107,8 @@ fn load_material<'a>(load_context: &'a mut LoadContext, path: String) -> Handle<
 
 pub fn build_point_entity(builder: &mut WorldChildBuilder, entity: MapPointEntity) {
     let transform = entity.transform.clone();
-    builder.spawn()
+    builder
+        .spawn()
         .insert(Name::new(entity.name.clone()))
         .insert(entity)
         .insert_bundle(SpatialBundle {

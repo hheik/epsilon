@@ -10,12 +10,16 @@ impl Plugin for LightPlugin {
     }
 }
 
-fn light_builder(mut commands: Commands, query: Query<(Entity, &MapPointEntity), Added<MapPointEntity>>) {
+fn light_builder(
+    mut commands: Commands,
+    query: Query<(Entity, &MapPointEntity), Added<MapPointEntity>>,
+) {
     for (entity, map_point_entity) in query.iter() {
         match map_point_entity.name.as_str() {
             "light_point" => {
                 commands.entity(entity).with_children(|builder| {
-                    builder.spawn()
+                    builder
+                        .spawn()
                         .insert(Name::new("point light"))
                         .insert_bundle(PointLightBundle {
                             point_light: PointLight {
@@ -37,8 +41,8 @@ fn light_builder(mut commands: Commands, query: Query<(Entity, &MapPointEntity),
                             ..default()
                         });
                 });
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 }
