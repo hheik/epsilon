@@ -4,6 +4,7 @@
 {
 "classname" "worldspawn"
 "_tb_textures" "textures/station"
+"_tb_def" "external:entity.fgd"
 // brush 0
 {
 ( -26.509667991878082 64 0 ) ( 64 -26.509667991878075 0 ) ( 64 -26.509667991878075 -32 ) station/sign_control 0 0 0 1 1
@@ -13,4 +14,15 @@
 ( 64 -26.509667991878075 0 ) ( 154.50966799187808 64 0 ) ( 154.50966799187808 64 -32 ) station/sign_control 0 -16 0 1 1
 ( 154.50966799187808 64 0 ) ( 64 154.50966799187808 0 ) ( 64 154.50966799187808 -32 ) station/sign_control 0 0 0 1 1
 }
+}
+// entity 1
+{
+"classname" "light_point"
+"origin" "56 56 8"
+}
+// entity 2
+{
+"classname" "info_player_start"
+"origin" "8 -88 48"
+"angle" "90"
 }
