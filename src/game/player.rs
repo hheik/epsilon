@@ -57,14 +57,13 @@ pub fn player_camera(
     mut query: Query<(&mut KinematicInput, &Transform), With<PlayerInput>>,
 ) {
     for (mut kinematic, transform) in query.iter_mut() {
-        let mut x = 0.0;
-        let mut y = 0.0;
-        let z = input_to_axis(input.pressed(KeyCode::E), input.pressed(KeyCode::Q)) * PI * 0.5;
+        let mut turning = Vec3::ZERO;
+        turning.z = input_to_axis(input.pressed(KeyCode::E), input.pressed(KeyCode::Q)) * PI * 0.5;
         for event in mouse_motion_events.iter() {
-            x += event.delta.y * -0.1;
-            y += event.delta.x * -0.1;
+            turning.x += event.delta.y * -0.1;
+            turning.y += event.delta.x * -0.1;
         }
-        kinematic.turning = transform.rotation * Vec3 { x, y, z };
+        kinematic.turning = transform.rotation * turning;
     }
 }
 
@@ -89,7 +88,7 @@ pub fn player_spawn(
                             ..default()
                         })
                         .insert(KinematicProperties {
-                            speed: 4.0,
+                            speed: 8.0,
                             acceleration: 4.0,
                             friction: 4.0,
                             turning_lerp: 20.0,
