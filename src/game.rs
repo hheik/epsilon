@@ -1,9 +1,10 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 
 use crate::{import::ImporterPlugins, qmap::QMapPlugin};
 
-use self::{hierarchy::*, kinematic::kinematic_movement, light::*, player::*};
+use self::{kinematic::kinematic_movement, light::*, player::*};
 
 pub mod hierarchy;
 pub mod kinematic;
@@ -18,7 +19,8 @@ pub fn init() {
         // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(QMapPlugin)
         .add_plugin(LightPlugin)
-        .add_plugin(HierarchyVisualizerPlugin)
+        // .add_plugin(HierarchyVisualizerPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_startup_system(map_setup)
         .add_startup_system(setup)
         .add_system(mouse_capture)
@@ -62,13 +64,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn mouse_capture(
     mut windows: ResMut<Windows>,
-    mouse: Res<Input<MouseButton>>,
+    keycode: Res<Input<KeyCode>>,
     key: Res<Input<KeyCode>>,
 ) {
     let window = windows.get_primary_mut().unwrap();
-    if mouse.just_pressed(MouseButton::Left) {
-        window.set_cursor_visibility(false);
-        window.set_cursor_lock_mode(true);
+    if keycode.just_pressed(KeyCode::P) {
+        window.set_cursor_visibility(!window.cursor_visible());
+        window.set_cursor_lock_mode(!window.cursor_locked());
     }
     if key.just_pressed(KeyCode::Escape) {
         window.set_cursor_visibility(true);
